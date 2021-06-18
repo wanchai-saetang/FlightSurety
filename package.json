@@ -1,0 +1,19 @@
+{
+  "name": "flightsurety",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wanchai-saetang/FlightSurety.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/wanchai-saetang/FlightSurety/issues"
+  },
+  "homepage": "https://github.com/wanchai-saetang/FlightSurety#readme"
+}
