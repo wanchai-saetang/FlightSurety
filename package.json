@@ -5,7 +5,8 @@
   "main": "index.html",
   "scripts": {
     "test": "truffle test ./test/flightSurety.js",
-    "dapp": "npx parcel index.html"
+    "dapp": "npx parcel index.html",
+    "server": "npx parcel ./src/server/index.js"
   },
   "repository": {
     "type": "git",
@@ -18,12 +19,26 @@
   },
   "homepage": "https://github.com/wanchai-saetang/FlightSurety#readme",
   "devDependencies": {
+    "parcel": "^2.0.0-beta.2",
     "prettier": "^2.3.1",
     "prettier-plugin-solidity": "^1.0.0-beta.13"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.1.0",
     "@truffle/hdwallet-provider": "^1.4.0",
+    "express": "^4.17.1",
     "web3": "^1.3.6"
+  },
+  "targets": {
+    "main": {
+      "engines": {
+        "node": ">=4.x",
+        "electron": ">=2.x",
+        "browsers": [
+          "> 1%",
+          "not dead"
+        ]
+      }
+    }
   }
 }

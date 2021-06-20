@@ -1,19 +1,18 @@
-var Test = require("../config/testConfig.js");
+const Test = require("../config/testConfig.js");
 //var BigNumber = require('bignumber.js');
 
 contract("Oracles", async (accounts) => {
   const TEST_ORACLES_COUNT = 20;
-  var config;
+  let config;
+  // Watch contract events
+  const STATUS_CODE_UNKNOWN = 0;
+  const STATUS_CODE_ON_TIME = 10;
+  const STATUS_CODE_LATE_AIRLINE = 20;
+  const STATUS_CODE_LATE_WEATHER = 30;
+  const STATUS_CODE_LATE_TECHNICAL = 40;
+  const STATUS_CODE_LATE_OTHER = 50;
   before("setup contract", async () => {
     config = await Test.Config(accounts);
-
-    // Watch contract events
-    const STATUS_CODE_UNKNOWN = 0;
-    const STATUS_CODE_ON_TIME = 10;
-    const STATUS_CODE_LATE_AIRLINE = 20;
-    const STATUS_CODE_LATE_WEATHER = 30;
-    const STATUS_CODE_LATE_TECHNICAL = 40;
-    const STATUS_CODE_LATE_OTHER = 50;
   });
 
   it("can register oracles", async () => {
@@ -22,10 +21,14 @@ contract("Oracles", async (accounts) => {
 
     // ACT
     for (let a = 1; a < TEST_ORACLES_COUNT; a++) {
-      await config.flightSuretyApp.registerOracle({
-        from: accounts[a],
-        value: fee,
-      });
+      try {
+        await config.flightSuretyApp.registerOracle({
+          from: accounts[a],
+          value: fee,
+        });
+      } catch (err) {
+        console.log(err);
+      }
       let result = await config.flightSuretyApp.getMyIndexes.call({
         from: accounts[a],
       });
@@ -41,13 +44,18 @@ contract("Oracles", async (accounts) => {
     let timestamp = Math.floor(Date.now() / 1000);
 
     // Submit a request for oracles to get status information for a flight
-    await config.flightSuretyApp.fetchFlightStatus(
+    const result = await config.flightSuretyApp.fetchFlightStatus(
       config.firstAirline,
       flight,
       timestamp
     );
     // ACT
-
+    assert.equal(
+      result.logs[0].event,
+      "OracleRequest",
+      "Must emit OracleRequest event"
+    );
+    console.log(result.logs[0].args.index.toString()); // get request index
     // Since the Index assigned to each test account is opaque by design
     // loop through all the accounts and for each account, all its Indexes (indices?)
     // and submit a response. The contract will reject a submission if it was
@@ -68,15 +76,16 @@ contract("Oracles", async (accounts) => {
             STATUS_CODE_ON_TIME,
             { from: accounts[a] }
           );
+          console.log(`${oracleIndexes} : ${idx}`);
         } catch (e) {
           // Enable this when debugging
-          console.log(
-            "\nError",
-            idx,
-            oracleIndexes[idx].toNumber(),
-            flight,
-            timestamp
-          );
+          // console.log(
+          //   "\nError",
+          //   idx,
+          //   oracleIndexes[idx].toNumber(),
+          //   flight,
+          //   timestamp
+          // );
         }
       }
     }

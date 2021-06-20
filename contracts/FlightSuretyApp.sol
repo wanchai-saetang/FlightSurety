@@ -17,6 +17,8 @@ contract FlightSuretyApp {
   /*                                       DATA VARIABLES                                     */
   /********************************************************************************************/
 
+  FlightSuretyDataInterface private flightSuretyDataInstance;
+
   // Flight status codees
   uint8 private constant STATUS_CODE_UNKNOWN = 0;
   uint8 private constant STATUS_CODE_ON_TIME = 10;
@@ -35,15 +37,17 @@ contract FlightSuretyApp {
   }
 
   mapping(bytes32 => Flight) private flights;
+  Flight[] flightList;
 
   // Model for responses from oracles
   struct ResponseInfo {
     address requester; // Account that requested status
     bool isOpen; // If open, oracle responses are accepted
-    mapping(uint8 => address[]) responses; // Mapping key is the status code reported
+    // mapping(uint8 => address[]) responses; // Mapping key is the status code reported
     // This lets us group responses and identify
     // the response that majority of the oracles
   }
+  mapping(bytes32 => mapping(uint8 => address[])) private responses;
 
   mapping(bytes32 => ResponseInfo) private oracleResponses;
 
@@ -74,6 +78,11 @@ contract FlightSuretyApp {
     _;
   }
 
+  modifier isOracle() {
+    require(oracles[msg.sender].isRegistered, "must be oracle");
+    _;
+  }
+
   /********************************************************************************************/
   /*                                       CONSTRUCTOR                                        */
   /********************************************************************************************/
@@ -82,7 +91,10 @@ contract FlightSuretyApp {
    * @dev Contract constructor
    *
    */
-  constructor() {
+  constructor(address _flightSuretyDataAddress) {
+    flightSuretyDataInstance = FlightSuretyDataInterface(
+      _flightSuretyDataAddress
+    );
     contractOwner = msg.sender;
   }
 
@@ -94,6 +106,19 @@ contract FlightSuretyApp {
     return true; // Modify to call data contract's status
   }
 
+  function getFlight(
+    address airline,
+    string memory flight,
+    uint256 timestamp
+  ) external view returns (Flight memory) {
+    bytes32 flightKey = getFlightKey(airline, flight, timestamp);
+    return flights[flightKey];
+  }
+
+  function getAllFlight() external view returns (Flight[] memory) {
+    return flightList;
+  }
+
   /********************************************************************************************/
   /*                                     SMART CONTRACT FUNCTIONS                             */
   /********************************************************************************************/
@@ -102,19 +127,41 @@ contract FlightSuretyApp {
    * @dev Add an airline to the registration queue
    *
    */
-  function registerAirline()
-    external
-    pure
-    returns (bool success, uint256 votes)
-  {
-    return (success, 0);
-  }
+  // function registerAirline()
+  //   external
+  //   pure
+  //   returns (bool success, uint256 votes)
+  // {
+  //   return (success, 0);
+  // }
 
   /**
    * @dev Register a future flight for insuring.
    *
    */
-  function registerFlight() external pure {}
+  function registerFlight(
+    address airline,
+    string memory flight,
+    uint256 timestamp
+  ) external {
+    require(
+      flightSuretyDataInstance.getAirlineFunded(airline),
+      "This airline haven't been registered yet"
+    );
+
+    bytes32 flightKey = getFlightKey(airline, flight, timestamp);
+
+    Flight memory newFlight = Flight({
+      isRegistered: true,
+      statusCode: STATUS_CODE_UNKNOWN,
+      updatedTimestamp: timestamp,
+      airline: airline
+    });
+
+    flights[flightKey] = newFlight;
+
+    flightList.push(newFlight);
+  }
 
   /**
    * @dev Called after oracle has updated flight status
@@ -125,7 +172,13 @@ contract FlightSuretyApp {
     string memory flight,
     uint256 timestamp,
     uint8 statusCode
-  ) internal pure {}
+  ) internal {
+    bytes32 flightKey = getFlightKey(airline, flight, timestamp);
+    flights[flightKey].statusCode = statusCode;
+    if (statusCode == 20) {
+      flightSuretyDataInstance.creditInsurees(airline, flight, timestamp);
+    }
+  }
 
   // Generate a request for oracles to fetch flight information
   function fetchFlightStatus(
@@ -133,7 +186,7 @@ contract FlightSuretyApp {
     string memory flight,
     uint256 timestamp
   ) external {
-    uint8 index = getRandomIndex(msg.sender);
+    uint8 index = getRandomIndex(msg.sender); // random 0 - 9
 
     // Generate a unique key for storing the request
     bytes32 key = keccak256(
@@ -221,7 +274,7 @@ contract FlightSuretyApp {
     string memory flight,
     uint256 timestamp,
     uint8 statusCode
-  ) external {
+  ) external isOracle {
     require(
       (oracles[msg.sender].indexes[0] == index) ||
         (oracles[msg.sender].indexes[1] == index) ||
@@ -237,14 +290,17 @@ contract FlightSuretyApp {
       "Flight or timestamp do not match oracle request"
     );
 
-    oracleResponses[key].responses[statusCode].push(msg.sender);
+    responses[key][statusCode].push(msg.sender);
+    // oracleResponses[key].responses[statusCode].push(msg.sender);
 
     // Information isn't considered verified until at least MIN_RESPONSES
     // oracles respond with the *** same *** information
     emit OracleReport(airline, flight, timestamp, statusCode);
-    if (oracleResponses[key].responses[statusCode].length >= MIN_RESPONSES) {
-      emit FlightStatusInfo(airline, flight, timestamp, statusCode);
 
+    if (responses[key][statusCode].length >= MIN_RESPONSES) {
+      emit FlightStatusInfo(airline, flight, timestamp, statusCode);
+      // close request
+      oracleResponses[key].isOpen = false;
       // Handle flight status as appropriate
       processFlightStatus(airline, flight, timestamp, statusCode);
     }
@@ -282,9 +338,8 @@ contract FlightSuretyApp {
 
     // Pseudo random number...the incrementing nonce adds variation
     uint8 random = uint8(
-      uint256(
-        keccak256(abi.encodePacked(blockhash(block.number - nonce++), account))
-      ) % maxValue
+      uint256(keccak256(abi.encodePacked(block.timestamp, nonce++, account))) %
+        maxValue
     );
 
     if (nonce > 250) {
@@ -295,4 +350,14 @@ contract FlightSuretyApp {
   }
 
   // endregion
+}
+
+interface FlightSuretyDataInterface {
+  function getAirlineFunded(address airline) external returns (bool);
+
+  function creditInsurees(
+    address airline,
+    string memory flight,
+    uint256 timestamp
+  ) external;
 }
