@@ -5,8 +5,8 @@
   "main": "index.html",
   "scripts": {
     "test": "truffle test ./test/flightSurety.js",
-    "dapp": "npx parcel index.html",
-    "server": "npx parcel ./src/server/index.js"
+    "dapp": "npx parcel ./src/dapp/index.html",
+    "server": "node ./src/server/index.js"
   },
   "repository": {
     "type": "git",
