@@ -11,16 +11,22 @@ const STATUS_CODE_LATE_TECHNICAL = 40;
 const STATUS_CODE_LATE_OTHER = 50;
 
 const PROBABILITY = [
+  STATUS_CODE_UNKNOWN,
+  STATUS_CODE_LATE_WEATHER,
+  STATUS_CODE_LATE_TECHNICAL,
+  STATUS_CODE_LATE_OTHER,
   STATUS_CODE_ON_TIME,
   STATUS_CODE_ON_TIME,
   STATUS_CODE_ON_TIME,
   STATUS_CODE_ON_TIME,
   STATUS_CODE_ON_TIME,
   STATUS_CODE_ON_TIME,
-  STATUS_CODE_ON_TIME,
-  STATUS_CODE_ON_TIME,
-  STATUS_CODE_ON_TIME,
-  STATUS_CODE_ON_TIME,
+  STATUS_CODE_LATE_AIRLINE,
+  STATUS_CODE_LATE_AIRLINE,
+  STATUS_CODE_LATE_AIRLINE,
+  STATUS_CODE_LATE_AIRLINE,
+  STATUS_CODE_LATE_AIRLINE,
+  STATUS_CODE_LATE_AIRLINE,
 ];
 
 function randomStatus(minValue = 0, maxValue = PROBABILITY.length) {
@@ -42,7 +48,7 @@ function randomStatus(minValue = 0, maxValue = PROBABILITY.length) {
   console.log(`Contract address: ${config.appAddress}`);
   const accounts = await web3.eth.getAccounts();
   const fee = await flightSuretyApp.methods.getRegistrationFee().call();
-  const oracleNumber = 20;
+  const oracleNumber = 40;
   for (let i = 0; i < oracleNumber; i++) {
     await flightSuretyApp.methods.registerOracle().send({
       from: accounts[i + 1],
@@ -79,7 +85,9 @@ function randomStatus(minValue = 0, maxValue = PROBABILITY.length) {
                 randomValue
               )
               .send({ from: accounts[i + 1], gas: 3000000 });
-            console.log(`${oracleIndexes} : ${idx}`);
+            console.log(
+              `Match Oracle : ${oracleIndexes}, Match Index : ${idx}`
+            );
           } catch (err) {}
         }
       }
