@@ -209,6 +209,10 @@ contract FlightSuretyApp {
   // Fee to be paid when registering oracle
   uint256 public constant REGISTRATION_FEE = 1 ether;
 
+  function getRegistrationFee() external pure returns (uint256) {
+    return REGISTRATION_FEE;
+  }
+
   // Number of oracles that must respond for valid status
   uint256 private constant MIN_RESPONSES = 3;
 
@@ -300,7 +304,7 @@ contract FlightSuretyApp {
     if (responses[key][statusCode].length >= MIN_RESPONSES) {
       emit FlightStatusInfo(airline, flight, timestamp, statusCode);
       // close request
-      oracleResponses[key].isOpen = false;
+      delete oracleResponses[key];
       // Handle flight status as appropriate
       processFlightStatus(airline, flight, timestamp, statusCode);
     }
