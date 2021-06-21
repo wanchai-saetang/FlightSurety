@@ -22,6 +22,34 @@ const statusMapping = new Map([
       ]);
     });
 
+    contract.getAllFlight((error, result) => {
+      const listEl = document.querySelector("#flight-list");
+      result.forEach((res) => {
+        const htmlEl = `<li>Flight: ${res.flightName}, Time: ${new Date(
+          +res.updatedTimestamp
+        )} <btn class="btn btn-dark purchase-btn" data-airline=${
+          res.airline
+        } data-flight=${res.flightName} data-timestamp=${
+          res.updatedTimestamp
+        }>Purchase</btn></li>`;
+        listEl.insertAdjacentHTML("afterbegin", htmlEl);
+      });
+      const purchaseBtns = document.querySelectorAll(".purchase-btn");
+      purchaseBtns.forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          contract.buy(
+            btn.dataset.airline,
+            btn.dataset.flight,
+            btn.dataset.timestamp,
+            (err, res) => {
+              console.log(err, res);
+            }
+          );
+        });
+      });
+    });
+
     contract.watchFlightStatus((value) => {
       const statusElement = document.querySelector(
         "#display-wrapper > section:last-child > div > div:last-child"

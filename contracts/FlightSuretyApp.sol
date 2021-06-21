@@ -32,6 +32,7 @@ contract FlightSuretyApp {
   struct Flight {
     bool isRegistered;
     uint8 statusCode;
+    string flightName;
     uint256 updatedTimestamp;
     address airline;
   }
@@ -154,6 +155,7 @@ contract FlightSuretyApp {
     Flight memory newFlight = Flight({
       isRegistered: true,
       statusCode: STATUS_CODE_UNKNOWN,
+      flightName: flight,
       updatedTimestamp: timestamp,
       airline: airline
     });

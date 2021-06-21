@@ -210,12 +210,7 @@ contract FlightSuretyData {
     delete authorizedContracts[_address];
   }
 
-  function getAirlineFunded(address airline)
-    external
-    view
-    isCallerAuthorized
-    returns (bool)
-  {
+  function getAirlineFunded(address airline) external view returns (bool) {
     return airlinesFunded[airline];
   }
 

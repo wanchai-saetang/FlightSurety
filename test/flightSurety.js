@@ -1,6 +1,6 @@
 const Test = require("../config/testConfig.js");
 
-contract.skip("Flight Surety Tests", async (accounts) => {
+contract("Flight Surety Tests", async (accounts) => {
   let config;
   before("setup contract", async () => {
     config = await Test.Config(accounts);

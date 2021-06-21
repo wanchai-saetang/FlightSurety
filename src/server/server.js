@@ -1,4 +1,5 @@
 const FlightSuretyApp = require("../../build/contracts/FlightSuretyApp.json");
+const FlightSuretyData = require("../../build/contracts/FlightSuretyData.json");
 const Config = require("./config.json");
 const Web3 = require("web3");
 const express = require("express");
@@ -34,6 +35,17 @@ function randomStatus(minValue = 0, maxValue = PROBABILITY.length) {
   return PROBABILITY[index];
 }
 
+function randomFlight() {
+  const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const firstChar = characters[Math.floor(Math.random() * characters.length)];
+  const secondChar = characters[Math.floor(Math.random() * characters.length)];
+  const thirdChar = characters[Math.floor(Math.random() * characters.length)];
+  const fourthChar = characters[Math.floor(Math.random() * characters.length)];
+  const firstNumber = Math.floor(Math.random() * 10);
+  const secondNumber = Math.floor(Math.random() * 10);
+  return `${firstChar}${secondChar}${thirdChar}${fourthChar}${firstNumber}${secondNumber}`;
+}
+
 (async function () {
   let config = Config["localhost"];
   let web3 = new Web3(
@@ -45,8 +57,93 @@ function randomStatus(minValue = 0, maxValue = PROBABILITY.length) {
     FlightSuretyApp.abi,
     config.appAddress
   );
+  let flightSuretyData = new web3.eth.Contract(
+    FlightSuretyData.abi,
+    config.dataAddress
+  );
   console.log(`Contract address: ${config.appAddress}`);
+
   const accounts = await web3.eth.getAccounts();
+
+  // register airlines
+  // const balance = await web3.eth.getBalance(accounts[0]);
+  // console.log(balance);
+  // const airFund = await flightSuretyData.methods
+  //   .getAirlineFunded(accounts[0])
+  //   .call();
+  // console.log(airFund);
+  try {
+    await flightSuretyData.methods
+      .registerAirline(accounts[1])
+      .send({ from: accounts[0], gas: 3000000 });
+  } catch (err) {
+    console.log(`this airline already exists`);
+  }
+  try {
+    await flightSuretyData.methods
+      .registerAirline(accounts[2])
+      .send({ from: accounts[0], gas: 3000000 });
+  } catch (err) {
+    console.log(`this airline already exists`);
+  }
+  try {
+    await flightSuretyData.methods
+      .registerAirline(accounts[3])
+      .send({ from: accounts[0], gas: 3000000 });
+  } catch (err) {
+    console.log(`this airline already exists`);
+  }
+  try {
+    await flightSuretyData.methods
+      .registerAirline(accounts[4])
+      .send({ from: accounts[0], gas: 3000000 });
+  } catch (err) {
+    console.log(`this airline already exists`);
+  }
+
+  await flightSuretyData.methods.fund().send({
+    from: accounts[1],
+    value: web3.utils.toWei("10"),
+    gas: 3000000,
+  });
+  await flightSuretyData.methods.fund().send({
+    from: accounts[2],
+    value: web3.utils.toWei("10"),
+    gas: 3000000,
+  });
+  await flightSuretyData.methods.fund().send({
+    from: accounts[3],
+    value: web3.utils.toWei("10"),
+    gas: 3000000,
+  });
+  await flightSuretyData.methods.fund().send({
+    from: accounts[4],
+    value: web3.utils.toWei("10"),
+    gas: 3000000,
+  });
+
+  // register flights
+  console.log("Register Flights");
+  for (i = 0; i < 4; i++) {
+    const airline = accounts[i + 1];
+    const flight = randomFlight();
+    const timestamp = new Date();
+    timestamp.setDate(timestamp.getDate() + Math.floor(Math.random() * 10));
+    console.log(`${airline} : ${flight} : ${timestamp}`);
+    try {
+      await flightSuretyApp.methods
+        .registerFlight(airline, flight, Date.parse(timestamp))
+        .send({ from: accounts[0], gas: 3000000 });
+    } catch (err) {
+      console.log(err);
+    }
+  }
+  // const airline = accounts[1];
+  // const flight = "BKKJFK";
+  // const timestamp = 1624179600;
+  // await config.flightSuretyApp.registerFlight(airline, flight, timestamp);
+
+  // register oracles
   const fee = await flightSuretyApp.methods.getRegistrationFee().call();
   const oracleNumber = 40;
   for (let i = 0; i < oracleNumber; i++) {
@@ -63,6 +160,7 @@ function randomStatus(minValue = 0, maxValue = PROBABILITY.length) {
     );
   }
 
+  // watch oracle request
   flightSuretyApp.events
     .OracleRequest()
     .on("data", async (event) => {
@@ -94,6 +192,7 @@ function randomStatus(minValue = 0, maxValue = PROBABILITY.length) {
     })
     .on("error", (error) => console.log(error));
 
+  // watch flight status submit
   flightSuretyApp.events.FlightStatusInfo().on("data", (event) => {
     console.log(`====> Return status: ${event.returnValues.status} <====`);
   });
