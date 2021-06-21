@@ -22,7 +22,7 @@ Clone project repositories, and run below command for install necessary tools an
 
 ```
 npm install
-ganache-cli -m "<your mnemonic>" -e 100000 --accounts=100
+ganache-cli -m "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat" -e 100000 --accounts=100 (if you use your mnemonic, make sure to change address in config/testConfig.js first before run tests)
 truffle migrate --reset
 npm run server
 npm run dapp
